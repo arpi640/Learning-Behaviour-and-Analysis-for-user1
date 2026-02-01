@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Message - Student</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Student Dashboard</a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">Welcome, {{ current_user.username }}</span>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="p-3">
+                    <h5>Navigation</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_messages') }}">Messages</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="card-title mb-0">Send Message to Teacher</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="POST">
+                            <div class="mb-3">
+                                <label for="teacher_id" class="form-label">Select Teacher *</label>
+                                <select class="form-select" id="teacher_id" name="teacher_id" required>
+                                    <option value="">Choose a teacher...</option>
+                                    {% for teacher in teachers %}
+                                    <option value="{{ teacher.id }}">
+                                        {{ teacher.full_name }} - {{ teacher.user.email }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="subject" class="form-label">Subject *</label>
+                                <input type="text" class="form-control" id="subject" name="subject" required 
+                                       placeholder="Enter message subject">
+                            </div>
+                            <div class="mb-3">
+                                <label for="content" class="form-label">Message *</label>
+                                <textarea class="form-control" id="content" name="content" rows="8" required 
+                                          placeholder="Type your message to the teacher here..."></textarea>
+                            </div>
+                            <div class="alert alert-info">
+                                <small>
+                                    <strong>Note:</strong> Your message will be sent to the selected teacher. 
+                                    They will be able to reply to you through the messaging system.
+                                </small>
+                            </div>
+                            <div class="text-center">
+                                <button type="submit" class="btn btn-primary btn-lg">Send Message</button>
+                                <a href="{{ url_for('student_messages') }}" class="btn btn-secondary btn-lg">Cancel</a>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Quick Templates -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Quick Message Templates</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <div class="card template-card">
+                                    <div class="card-body">
+                                        <h6>Question About Course</h6>
+                                        <p class="small">"I have a question about the course material. Could you please help me understand..."</p>
+                                        <button class="btn btn-sm btn-outline-primary use-template" data-template="question">Use Template</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card template-card">
+                                    <div class="card-body">
+                                        <h6>Technical Issue</h6>
+                                        <p class="small">"I'm having trouble accessing the course materials/tests. Could you please assist?"</p>
+                                        <button class="btn btn-sm btn-outline-primary use-template" data-template="technical">Use Template</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="card template-card">
+                                    <div class="card-body">
+                                        <h6>Feedback</h6>
+                                        <p class="small">"I wanted to share some feedback about the course. I really enjoyed..."</p>
+                                        <button class="btn btn-sm btn-outline-primary use-template" data-template="feedback">Use Template</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const templates = {
+                question: {
+                    subject: "Question about course material",
+                    content: `Dear Teacher,
+
+I have a question about the course material we covered recently. Could you please help me understand the following concept better:
+
+[Please describe your question here]
+
+Thank you for your help!
+
+Best regards,
+{{ current_user.username }}`
+                },
+                technical: {
+                    subject: "Technical issue with course access",
+                    content: `Dear Teacher,
+
+I'm experiencing a technical issue with accessing the course materials/tests. The problem I'm facing is:
+
+[Please describe the issue]
+
+Could you please assist me with this?
+
+Thank you!
+
+Best regards,
+{{ current_user.username }}`
+                },
+                feedback: {
+                    subject: "Feedback about the course",
+                    content: `Dear Teacher,
+
+I wanted to share some feedback about the course. I really enjoyed:
+
+[Share what you liked]
+
+One suggestion I have for improvement is:
+
+[Share your suggestion]
+
+Thank you for your great work!
+
+Best regards,
+{{ current_user.username }}`
+                }
+            };
+
+            document.querySelectorAll('.use-template').forEach(button => {
+                button.addEventListener('click', function() {
+                    const templateType = this.getAttribute('data-template');
+                    const template = templates[templateType];
+                    
+                    document.getElementById('subject').value = template.subject;
+                    document.getElementById('content').value = template.content;
+                    
+                    // Scroll to the form
+                    document.getElementById('subject').scrollIntoView({ behavior: 'smooth' });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

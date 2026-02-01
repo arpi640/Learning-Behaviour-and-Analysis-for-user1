@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.title }} - Materials</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Student Dashboard</a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">Welcome, {{ current_user.username }}</span>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar">
+                <div class="p-3">
+                    <h5>Navigation</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        </li>
+						<li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('student_tests') }}">Take Tests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_messages') }}">Messages</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_courses') }}">Browse Courses</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">{{ course.title }}</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 ms-sm-auto px-4 py-4">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h2>{{ course.title }}</h2>
+                        <p class="text-muted">Teacher: {{ course.teacher.full_name }}</p>
+                    </div>
+					
+    <a href="{{ url_for('download_material_summary', course_id=course.id) }}"
+       class="btn btn-outline-primary">
+        📥 Download Summary
+    </a>
+					
+                    {% if course.tests %}
+                    <a href="#" class="btn btn-primary">Take Test</a>
+                    {% endif %}
+                </div>
+
+                <!-- Course Description -->
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Course Description</h5>
+                        <p class="card-text">{{ course.description or 'No description available.' }}</p>
+                    </div>
+                </div>
+
+                <!-- Materials List -->
+                <div class="row">
+                    {% for material in materials %}
+                    <div class="col-12 mb-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">{{ material.title }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="material-content">
+                                    {{ material.content|replace('\n', '<br>')|safe }}
+                                </div>
+                                
+                                {% if material.questions %}
+                                <div class="mt-4">
+                                    <h6>Practice Questions:</h6>
+                                    <div class="accordion" id="questionsAccordion{{ material.id }}">
+                                        {% for question in material.questions %}
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="heading{{ question.id }}">
+                                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ question.id }}" aria-expanded="false" aria-controls="collapse{{ question.id }}">
+                                                    <span class="badge {% if question.difficulty == 'basic' %}bg-success{% elif question.difficulty == 'intermediate' %}bg-warning{% else %}bg-danger{% endif %} me-2">
+                                                        {{ question.difficulty|title }}
+                                                    </span>
+                                                    {{ question.question_text }}
+                                                </button>
+                                            </h2>
+                                            <div id="collapse{{ question.id }}" class="accordion-collapse collapse" aria-labelledby="heading{{ question.id }}" data-bs-parent="#questionsAccordion{{ material.id }}">
+                                                <div class="accordion-body">
+                                                    <strong>Answer:</strong> {{ question.answer }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="card-footer">
+                                <small class="text-muted">Posted: {{ material.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                                <div class="float-end">
+                                    <button class="btn btn-sm btn-outline-success mark-completed" data-material-id="{{ material.id }}">
+                                        Mark as Completed
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <p class="text-muted">No materials available for this course yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Progress Tracking -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Your Progress</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Materials Progress</h6>
+                                <div class="progress mb-3" style="height: 20px;">
+                                    <div class="progress-bar" role="progressbar" style="width: 25%;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">25%</div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Next Steps</h6>
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item">Complete all course materials</li>
+                                    <li class="list-group-item">Practice with generated questions</li>
+                                    <li class="list-group-item">Take the course test</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mark as completed functionality
+            const markCompletedButtons = document.querySelectorAll('.mark-completed');
+            markCompletedButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const materialId = this.getAttribute('data-material-id');
+                    this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Marking...';
+                    this.disabled = true;
+                    
+                    // Simulate API call
+                    setTimeout(() => {
+                        this.innerHTML = '✓ Completed';
+                        this.classList.remove('btn-outline-success');
+                        this.classList.add('btn-success');
+                    }, 1000);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test: {{ test.title }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Student Dashboard</a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">Welcome, {{ current_user.username }}</span>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-12">
+                <div class="container py-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 class="card-title mb-0">{{ test.title }}</h2>
+                            <p class="mb-0 text-muted">{{ test.description }}</p>
+                        </div>
+                        <div class="card-body">
+                            <form method="POST" id="testForm">
+                                {% for tq in test.test_questions %}
+                                <div class="question-card mb-4 p-4 border rounded">
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <h5>Question {{ loop.index }}</h5>
+                                        <span class="badge {% if tq.question.difficulty == 'basic' %}bg-success{% elif tq.question.difficulty == 'intermediate' %}bg-warning{% else %}bg-danger{% endif %}">
+                                            {{ tq.question.difficulty|title }}
+                                        </span>
+                                    </div>
+                                    <p class="question-text mb-3">{{ tq.question.question_text }}</p>
+                                    
+                                    <div class="answer-section">
+                                        <div class="form-group">
+                                            <label for="answer_{{ tq.question.id }}" class="form-label">Your Answer:</label>
+                                            <textarea 
+                                                class="form-control" 
+                                                id="answer_{{ tq.question.id }}" 
+                                                name="question_{{ tq.question.id }}" 
+                                                rows="4" 
+                                                placeholder="Type your answer here..."
+                                                required></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                
+                                <div class="text-center mt-4">
+                                    <button type="submit" class="btn btn-primary btn-lg">Submit Test</button>
+                                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="saveProgress()">Save Progress</button>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="card-footer text-muted">
+                            <small>Make sure to answer all questions before submitting. You cannot change your answers after submission.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function saveProgress() {
+            // Save answers to localStorage
+            const form = document.getElementById('testForm');
+            const formData = new FormData(form);
+            const answers = {};
+            
+            for (let [key, value] of formData.entries()) {
+                answers[key] = value;
+            }
+            
+            localStorage.setItem('testProgress_{{ test.id }}', JSON.stringify(answers));
+            alert('Progress saved! You can continue later.');
+        }
+
+        // Load saved progress
+        document.addEventListener('DOMContentLoaded', function() {
+            const savedProgress = localStorage.getItem('testProgress_{{ test.id }}');
+            if (savedProgress) {
+                const answers = JSON.parse(savedProgress);
+                for (const [questionId, answer] of Object.entries(answers)) {
+                    const textarea = document.querySelector(`[name="${questionId}"]`);
+                    if (textarea) {
+                        textarea.value = answer;
+                    }
+                }
+            }
+        });
+
+        // Auto-save every 30 seconds
+        setInterval(saveProgress, 30000);
+    </script>
+</body>
+</html>

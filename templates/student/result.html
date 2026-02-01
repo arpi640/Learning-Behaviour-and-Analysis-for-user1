@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Result</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="#">Student Dashboard</a>
+            <div class="navbar-nav ms-auto">
+                <span class="nav-link">Welcome, {{ current_user.username }}</span>
+                <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+		<div class="col-md-3 col-lg-2 sidebar">
+                <div class="p-3">
+                    <h5>Navigation</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_dashboard') }}">Dashboard</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_courses') }}">Browse Courses</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="{{ url_for('student_tests') }}">Take Tests</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('student_messages') }}">Messages</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div class="col-12">
+                <div class="container py-4">
+                    <!-- Overall Result -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h2 class="card-title mb-0">Test Result: {{ result.test.title }}</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <div class="display-4 text-primary fw-bold">{{ "%.1f"|format(result.score) }}%</div>
+                                    <p class="text-muted">Overall Score</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="display-4 text-info fw-bold">{{ result.total_questions }}</div>
+                                    <p class="text-muted">Total Questions</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="display-4 {% if result.score >= 70 %}text-success{% elif result.score >= 50 %}text-warning{% else %}text-danger{% endif %} fw-bold">
+                                        {% if result.score >= 70 %}A{% elif result.score >= 50 %}B{% else %}C{% endif %}
+                                    </div>
+                                    <p class="text-muted">Grade</p>
+                                </div>
+                            </div>
+                            <div class="text-center mt-3">
+                                <p class="text-muted">Completed on: {{ result.completed_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Analysis -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">Performance Analysis</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                {% for difficulty, stats in analysis.items() %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="card analysis-card difficulty-{{ difficulty }}">
+                                        <div class="card-body">
+                                            <h5 class="card-title text-capitalize">{{ difficulty }}</h5>
+                                            <div class="progress mb-2" style="height: 20px;">
+                                                <div class="progress-bar {% if stats.percentage >= 70 %}bg-success{% elif stats.percentage >= 50 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                     style="width: {{ stats.percentage }}%">
+                                                    {{ "%.0f"|format(stats.percentage) }}%
+                                                </div>
+                                            </div>
+                                            <p class="card-text small">
+                                                {{ stats.correct }}/{{ stats.total }} correct answers
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Breakdown -->
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">Detailed Breakdown</h4>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Question</th>
+                                            <th>Difficulty</th>
+                                            <th>Your Answer</th>
+                                            <th>Correct Answer</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for tq in result.test.test_questions %}
+                                        {% set student_answer = result.get_answers().get(tq.question.id, '') %}
+                                        {% set is_correct = student_answer and student_answer.strip().lower() == tq.question.answer.strip().lower() %}
+                                        <tr>
+                                            <td>{{ tq.question.question_text[:100] }}...</td>
+                                            <td>
+                                                <span class="badge {% if tq.question.difficulty == 'basic' %}bg-success{% elif tq.question.difficulty == 'intermediate' %}bg-warning{% else %}bg-danger{% endif %}">
+                                                    {{ tq.question.difficulty|title }}
+                                                </span>
+                                            </td>
+                                            <td>{{ student_answer[:50] or 'Not answered' }}{% if student_answer|length > 50 %}...{% endif %}</td>
+                                            <td>{{ tq.question.answer[:50] }}{% if tq.question.answer|length > 50 %}...{% endif %}</td>
+                                            <td>
+                                                {% if is_correct %}
+                                                <span class="badge bg-success">Correct</span>
+                                                {% else %}
+                                                <span class="badge bg-danger">Incorrect</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommendations -->
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h4 class="card-title mb-0">Recommendations</h4>
+                        </div>
+                        <div class="card-body">
+                            {% set weakest_area = [] %}
+                            {% for difficulty, stats in analysis.items() %}
+                                {% if stats.percentage < 70 %}
+                                    {% set _ = weakest_area.append(difficulty) %}
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if weakest_area %}
+                                <div class="alert alert-warning">
+                                    <h5>Areas for Improvement</h5>
+                                    <p>You should focus on improving your skills in these areas:</p>
+                                    <ul>
+                                        {% for area in weakest_area %}
+                                        <li><strong>{{ area|title }} level questions</strong> - Practice more with {{ area }} level materials</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-success">
+                                    <h5>Excellent Performance!</h5>
+                                    <p>You have demonstrated strong understanding across all difficulty levels. Keep up the good work!</p>
+                                </div>
+                            {% endif %}
+                            
+                            <div class="text-center mt-3">
+                                <a href="{{ url_for('view_course_materials', course_id=result.test.course.id) }}" class="btn btn-primary me-2">Review Course Materials</a>
+                                <a href="{{ url_for('student_dashboard') }}" class="btn btn-outline-primary">Back to Dashboard</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
